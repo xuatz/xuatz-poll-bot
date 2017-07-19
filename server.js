@@ -16,15 +16,15 @@ let state = {
     options: ["dummyOption1", "dummyOption2"],
     votes: [
         {
-            username: "dummyUser1",
+            user: "dummyUser1",
             option: "dummyOption1"
         },
         {
-            username: "dummyUser2",
+            user: "dummyUser2",
             option: "dummyOption1"
         },
         {
-            username: "dummyUser3",
+            user: "dummyUser3",
             option: "dummyOption2"
         }
     ]
@@ -66,10 +66,14 @@ bot.command("/addoption", ctx => {
 });
 
 bot.command("/vote", ctx => {
-    let username = ctx.update.message.from.username;
+    let { first_name, username } = ctx.update.message.from;
+
+    let user = username || first_name;
     let option = ctx.update.message.text.slice(6);
 
     console.log(option.length, option);
+    console.log(ctx);
+    console.log(ctx.update.message);
 
     // ctx.reply(
     //     "One time keyboard",
@@ -83,21 +87,17 @@ bot.command("/vote", ctx => {
     if (state.options.length > 0) {
         if (option && option.length > 0) {
             let index = state.votes.findIndex(vote => {
-                return vote.username == username;
+                return vote.user == user;
             });
 
             let vote = {
-                username,
+                user,
                 option
             };
 
-            console.log(index);
-
             if (index !== -1) {
-                console.log("raichu");
                 state.votes[index] = vote;
             } else {
-                console.log("pichu");
                 state.votes.push(vote);
                 // console.log("=====", state.votes);
             }
@@ -105,7 +105,7 @@ bot.command("/vote", ctx => {
             // console.log(ctx);
             // console.log(ctx.update);
 
-            ctx.reply(username + " have voted for: " + option).then(res => {
+            ctx.reply(user + " have voted for: " + option).then(res => {
                 let tmp = _.groupBy(state.votes, vote => vote.option);
                 // console.log(tmp);
                 let tmp2 = [];
