@@ -1214,6 +1214,12 @@ tar@^2.2.1:
     fstream "^1.0.2"
     inherits "2"
 
+telebot@^1.2.2:
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/telebot/-/telebot-1.2.2.tgz#d640e677ec3eb0e215a4e23bc3e9ef1ed5019b6e"
+  dependencies:
+    request "^2.81.0"
+
 telegraf@^3.8.2:
   version "3.8.2"
   resolved "https://registry.yarnpkg.com/telegraf/-/telegraf-3.8.2.tgz#4a2cef2ca5fb8ee716dc7c7edb8b813fe685f9c2"

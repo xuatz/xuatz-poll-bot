@@ -66,6 +66,7 @@ bot.command("/addoption", ctx => {
 });
 
 bot.command("/vote", ctx => {
+    console.log("/vote =======================");
     let { first_name, username } = ctx.update.message.from;
 
     let user = username || first_name;
@@ -155,7 +156,7 @@ bot.on("callback_query", ctx => {
     ctx.deleteMessage();
 });
 
-// console.log(Telegraf);
+console.log(Telegraf);
 // console.log(Telegraf.Telegram.toString());
 
 bot.startPolling();
