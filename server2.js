@@ -36,12 +36,13 @@ bot.on("/start", msg => {
 // };
 
 const initialState = {
+    userList: {},
     name: "",
     options: [],
     votes: []
 };
 
-let state = initialState;
+let state = _.cloneDeep(initialState);
 
 const getData = msg => {
     const offset = msg.entities[0].length;
@@ -50,7 +51,7 @@ const getData = msg => {
 };
 
 bot.on("/new", msg => {
-    state = initialState;
+    state = _.cloneDeep(initialState);
 
     let name = getData(msg);
 
@@ -59,15 +60,36 @@ bot.on("/new", msg => {
         msg.reply.text("Got it. Okay guys start voting!");
     } else {
         msg.reply.text("Starting a new poll!").then(res => {
-            console.log(res);
+            // console.log(res);
+            // return bot.sendMessage(msg.chat.id, "What is the poll about?", {
+            //     ask: "name",
+            //     replyMarkup: {
+            //         selective: true
+            //     },
+            //     replyToMessage: msg.message_id
+            // });
+
+            state.userList[msg.from.id] = "name";
+
             return bot.sendMessage(msg.chat.id, "What is the poll about?", {
                 ask: "name",
                 replyMarkup: {
-                    trueselective: true
+                    force_reply: true,
+                    selective: true
                 },
                 replyToMessage: msg.message_id
             });
         });
+    }
+});
+
+bot.on("*", (msg, props) => {
+    const userID = msg.from.id;
+    const ask = state.userList[userID];
+
+    if (ask) {
+        bot.event("ask." + ask, msg, props);
+        state.userList[userID] = false;
     }
 });
 
@@ -102,22 +124,26 @@ bot.on("/vote", msg => {
             replyToMessage: msg.message_id
         });
 
-        let vote = {
-            user: msg.from,
-            option
-        };
-        let index = state.votes.findIndex(vote => {
-            if (vote.user) {
-                return vote.user.id == msg.from.id;
-            }
-        });
-        if (index !== -1) {
-            state.votes[index] = vote;
-        } else {
-            state.votes.push(vote);
-        }
-
-        bot.event("/result", msg);
+        Promise.resolve()
+            .then(() => {
+                let vote = {
+                    user: msg.from,
+                    option
+                };
+                let index = state.votes.findIndex(vote => {
+                    if (vote.user) {
+                        return vote.user.id == msg.from.id;
+                    }
+                });
+                if (index !== -1) {
+                    state.votes[index] = vote;
+                } else {
+                    state.votes.push(vote);
+                }
+            })
+            .then(() => {
+                bot.event("/result", msg);
+            });
     } else {
         let replyMarkup = bot.keyboard(
             state.options.map(option => {
@@ -141,18 +167,25 @@ bot.on("/vote", msg => {
 
 bot.on("/result", msg => {
     let tmp = _.groupBy(state.votes, vote => vote.option);
-    // console.log(tmp);
-    let tmp2 = [];
     let tmp3 = "";
     _.forIn(tmp, (value, key) => {
-        tmp2.push({
-            option: key,
-            count: value.length
-        });
-        tmp3 += value.length + ": " + key + "\n";
-    });
+        tmp3 += `${key} (${value.length} votes) \n`;
 
-    msg.reply.text(`topic: ${state.name}\n=======================\n${tmp3}`);
+        // if (Math.random() > 0.5) {
+        //     tmp3 += value.length + ": " + key + "\n";
+        // } else {
+
+        // }
+
+        value.forEach(vote => {
+            tmp3 += "- " + (vote.user.first_name || vote.user.username) + "\n";
+        });
+    });
+    let text = `topic: ${state.name}\n`;
+    text += `=======================\n`;
+    text += `${tmp3}`;
+
+    msg.reply.text(text);
 });
 
 bot.start();
