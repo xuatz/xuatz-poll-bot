@@ -94,32 +94,30 @@ bot.on("/vote", msg => {
     let option = getData(msg);
 
     if (option && option.length > 0) {
-        bot
-            .sendMessage(msg.chat.id, "Your vote is captured", {
-                replyMarkup: {
-                    remove_keyboard: true,
-                    trueselective: true
-                },
-                replyToMessage: msg.message_id
-            })
-            .then(res => {
-                let vote = {
-                    user: msg.from,
-                    option
-                };
-                let index = state.votes.findIndex(vote => {
-                    if (vote.user) {
-                        return vote.user.id == msg.from.id;
-                    }
-                });
-                if (index !== -1) {
-                    state.votes[index] = vote;
-                } else {
-                    state.votes.push(vote);
-                }
+        bot.sendMessage(msg.chat.id, "Your vote is captured", {
+            replyMarkup: {
+                remove_keyboard: true,
+                trueselective: true
+            },
+            replyToMessage: msg.message_id
+        });
 
-                bot.event("/result", msg);
-            });
+        let vote = {
+            user: msg.from,
+            option
+        };
+        let index = state.votes.findIndex(vote => {
+            if (vote.user) {
+                return vote.user.id == msg.from.id;
+            }
+        });
+        if (index !== -1) {
+            state.votes[index] = vote;
+        } else {
+            state.votes.push(vote);
+        }
+
+        bot.event("/result", msg);
     } else {
         let replyMarkup = bot.keyboard(
             state.options.map(option => {
