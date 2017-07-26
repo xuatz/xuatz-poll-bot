@@ -6,7 +6,8 @@ const TeleBot = require("telebot");
 const _ = require("lodash");
 
 const bot = new TeleBot({
-    token: process.env.BOT_TOKEN
+    token: process.env.BOT_TOKEN,
+    usePlugins: ["askUser"]
 });
 
 // On start command
@@ -16,29 +17,66 @@ bot.on("/start", msg => {
     // return bot.sendMessage(id, "What is your name?", { ask: "name" });
 });
 
-let state = {
-    options: ["dummyOption1", "dummyOption2"],
-    votes: [
-        {
-            user: "dummyUser1",
-            option: "dummyOption1"
-        },
-        {
-            user: "dummyUser2",
-            option: "dummyOption1"
-        },
-        {
-            user: "dummyUser3",
-            option: "dummyOption2"
-        }
-    ]
+// let state = {
+//     options: ["dummyOption1", "dummyOption2"],
+//     votes: [
+//         {
+//             user: "dummyUser1",
+//             option: "dummyOption1"
+//         },
+//         {
+//             user: "dummyUser2",
+//             option: "dummyOption1"
+//         },
+//         {
+//             user: "dummyUser3",
+//             option: "dummyOption2"
+//         }
+//     ]
+// };
+
+const initialState = {
+    name: "",
+    options: [],
+    votes: []
 };
+
+let state = initialState;
 
 const getData = msg => {
     const offset = msg.entities[0].length;
     const data = msg.text.slice(offset + 1);
     return data;
 };
+
+bot.on("/new", msg => {
+    state = initialState;
+
+    let name = getData(msg);
+
+    if (name && name.length > 0) {
+        state.name = name;
+        msg.reply.text("Got it. Okay guys start voting!");
+    } else {
+        msg.reply.text("Starting a new poll!").then(res => {
+            console.log(res);
+            return bot.sendMessage(msg.chat.id, "What is the poll about?", {
+                ask: "name",
+                replyMarkup: {
+                    trueselective: true
+                },
+                replyToMessage: msg.message_id
+            });
+        });
+    }
+});
+
+// Ask name event
+bot.on("ask.name", msg => {
+    //TODO should include empty check
+    state.name = msg.text;
+    msg.reply.text("Got it. Okay guys start voting!");
+});
 
 bot.on("/add", msg => {
     let option = getData(msg).trim();
@@ -116,7 +154,7 @@ bot.on("/result", msg => {
         tmp3 += value.length + ": " + key + "\n";
     });
 
-    msg.reply.text(`current votes: \n=======================\n${tmp3}`);
+    msg.reply.text(`topic: ${state.name}\n=======================\n${tmp3}`);
 });
 
 bot.start();
