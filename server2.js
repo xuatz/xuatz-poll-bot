@@ -116,15 +116,14 @@ bot.on("/vote", msg => {
     let option = getData(msg);
 
     if (option && option.length > 0) {
-        bot.sendMessage(msg.chat.id, "Your vote is captured", {
-            replyMarkup: {
-                remove_keyboard: true,
-                trueselective: true
-            },
-            replyToMessage: msg.message_id
-        });
-
-        Promise.resolve()
+        bot
+            .sendMessage(msg.chat.id, "Your vote is captured", {
+                replyMarkup: {
+                    remove_keyboard: true,
+                    trueselective: true
+                },
+                replyToMessage: msg.message_id
+            })
             .then(() => {
                 let vote = {
                     user: msg.from,
