@@ -17,24 +17,6 @@ bot.on("/start", msg => {
     // return bot.sendMessage(id, "What is your name?", { ask: "name" });
 });
 
-// let state = {
-//     options: ["dummyOption1", "dummyOption2"],
-//     votes: [
-//         {
-//             user: "dummyUser1",
-//             option: "dummyOption1"
-//         },
-//         {
-//             user: "dummyUser2",
-//             option: "dummyOption1"
-//         },
-//         {
-//             user: "dummyUser3",
-//             option: "dummyOption2"
-//         }
-//     ]
-// };
-
 const initialState = {
     userList: {},
     name: "",
@@ -60,19 +42,10 @@ bot.on("/new", msg => {
         msg.reply.text("Got it. Okay guys start voting!");
     } else {
         msg.reply.text("Starting a new poll!").then(res => {
-            // console.log(res);
-            // return bot.sendMessage(msg.chat.id, "What is the poll about?", {
-            //     ask: "name",
-            //     replyMarkup: {
-            //         selective: true
-            //     },
-            //     replyToMessage: msg.message_id
-            // });
-
-            state.userList[msg.from.id] = "name";
+            state.userList[msg.from.id] = "title";
 
             return bot.sendMessage(msg.chat.id, "What is the poll about?", {
-                ask: "name",
+                ask: "title",
                 replyMarkup: {
                     force_reply: true,
                     selective: true
@@ -81,6 +54,19 @@ bot.on("/new", msg => {
             });
         });
     }
+});
+
+bot.on("/titlechange", msg => {
+    state.userList[msg.from.id] = "titlechange";
+
+    return bot.sendMessage(msg.chat.id, "What is the title of the poll?", {
+        ask: "titlechange",
+        replyMarkup: {
+            force_reply: true,
+            selective: true
+        },
+        replyToMessage: msg.message_id
+    });
 });
 
 bot.on("*", (msg, props) => {
@@ -94,37 +80,82 @@ bot.on("*", (msg, props) => {
 });
 
 // Ask name event
-bot.on("ask.name", msg => {
+bot.on("ask.title", msg => {
     //TODO should include empty check
     state.name = msg.text;
-    msg.reply.text("Got it. Okay guys start voting!");
+    msg.reply.text(`Got it. Okay guys start voting on:\n${msg.text}`);
+});
+
+// Ask name event
+bot.on("ask.titlechange", msg => {
+    //TODO should include empty check
+    state.name = msg.text;
+    msg.reply.text(`Okay! Title of the poll changed to:\n${msg.text}`);
 });
 
 bot.on("/add", msg => {
     let option = getData(msg).trim();
 
     if (option && option.length > 0) {
-        state.options.push(option);
-        msg.reply.text(option + " added as an option");
+        const responses = [
+            "not literally!",
+            "very funny",
+            "roflcopter i am flying",
+            "Somebody's gonna get hurt, real bad"
+        ];
+
+        const helperMsg = `\ntype \`/add <actual option>\` e.g. \`/add pikachu\``;
+
+        switch (option) {
+            case "nothing":
+                return bot.sendMessage(
+                    msg.chat.id,
+                    "You *literally* added nothing!" + helperMsg,
+                    { parseMode: "Markdown", replyToMessage: msg.message_id }
+                );
+            case "something":
+            case "<something>":
+            case "option":
+            case "<option>":
+                return bot.sendMessage(
+                    msg.chat.id,
+                    responses[Math.round(Math.random() * 3)] + helperMsg,
+                    { parseMode: "Markdown", replyToMessage: msg.message_id }
+                );
+            case "<actual option>":
+            case "actual option":
+                return bot.sendMessage(msg.chat.id, "RKO OUTTA NOWHERE!!!", {
+                    parseMode: "Markdown",
+                    replyToMessage: msg.message_id
+                });
+            default: {
+                state.options.push(option);
+                return msg.reply.text(option + " added as an option");
+            }
+        }
     } else {
-        msg.reply.text("you added nothing!");
+        bot.sendMessage(
+            msg.chat.id,
+            "You added nothing! type `/add <something>` to add option",
+            { parseMode: "Markdown", replyToMessage: msg.message_id }
+        );
     }
 });
 
 bot.on("/vote", msg => {
-    // console.log(msg);
     let option = getData(msg);
-
     if (option && option.length > 0) {
         bot
             .sendMessage(msg.chat.id, "Your vote is captured", {
                 replyMarkup: {
                     remove_keyboard: true,
-                    trueselective: true
+                    selective: true
                 },
                 replyToMessage: msg.message_id
             })
-            .then(() => {
+            .then(res => {
+                bot.deleteMessage(res.result.chat.id, res.result.message_id);
+
                 let vote = {
                     user: msg.from,
                     option
@@ -142,25 +173,36 @@ bot.on("/vote", msg => {
             })
             .then(() => {
                 bot.event("/result", msg);
+            })
+            .catch(err => {
+                console.log(err);
             });
     } else {
-        let replyMarkup = bot.keyboard(
-            state.options.map(option => {
-                return [bot.button("/vote " + option)];
-            })
-        );
+        if (state.options.length == 0) {
+            return bot.sendMessage(
+                msg.chat.id,
+                `There is no official options added yet!\nTry \`/add <option>\` or /vote <option> directly!`,
+                { parseMode: "Markdown", replyToMessage: msg.message_id }
+            );
+        } else {
+            let replyMarkup = bot.keyboard(
+                state.options.map(option => {
+                    return [bot.button("/vote " + option)];
+                })
+            );
 
-        // console.log(msg);
-        // msg.from.id
-        // msg.message_id
-        // msg.chat.id
-        return bot.sendMessage(msg.chat.id, "Please cast your vote", {
-            replyMarkup: Object.assign({}, replyMarkup, {
-                resize_keyboard: true,
-                selective: true
-            }),
-            replyToMessage: msg.message_id
-        });
+            // console.log(msg);
+            // msg.from.id
+            // msg.message_id
+            // msg.chat.id
+            return bot.sendMessage(msg.chat.id, "Please cast your vote", {
+                replyMarkup: Object.assign({}, replyMarkup, {
+                    resize_keyboard: true,
+                    selective: true
+                }),
+                replyToMessage: msg.message_id
+            });
+        }
     }
 });
 
