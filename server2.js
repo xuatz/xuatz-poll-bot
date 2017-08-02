@@ -156,6 +156,21 @@ bot.on("/vote", msg => {
             .then(res => {
                 bot.deleteMessage(res.result.chat.id, res.result.message_id);
 
+                // CASE INSENSITIVE CHECK -- START
+                // Create a regex based on 'option', to search case insensitively
+                let searchregex = new RegExp(option, 'i');
+
+                // Search each vote using the regex. matchedIndex is assigned -1 if no votes match case insensitive search
+                let matchedIndex = state.votes.findIndex((vote) => {
+                    return (vote.option.match(searchregex) !== null);
+                });
+
+                // For matched result, make the current vote option follow previously existing variant
+                if (matchedIndex !== -1) {
+                    option = state.votes[matchedIndex].option;
+                }
+                // CASE INSENSITIVE CHECK -- END
+
                 let vote = {
                     user: msg.from,
                     option
