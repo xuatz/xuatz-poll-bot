@@ -185,6 +185,18 @@ bot.on("/vote", msg => {
                 } else {
                     state.votes.push(vote);
                 }
+
+                // AD-HOC OPTIONS ADDED TO VOTE OPTIONS --  START
+                let matchedOptionIndex = state.options.findIndex((opt) => {
+                    return opt.match(searchregex) !== null;
+                });
+
+                if (matchedOptionIndex === -1) {
+                    // Naively adds ad-hoc options into the vote options after making 1 check to ensure entry was not previously used
+                    state.options.push(option);
+                }
+                // AD-HOC OPTIONS ADDED TO VOTE OPTIONS --  END
+
             })
             .then(() => {
                 bot.event("/result", msg);
