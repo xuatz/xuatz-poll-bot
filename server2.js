@@ -4,6 +4,23 @@ if (!process.env.NODE_ENV) {
 
 const TeleBot = require("telebot");
 const _ = require("lodash");
+const loki = require("lokijs");
+
+//db code will be moved to db.js, quite soon
+let States;
+const databaseInitialize = () => {
+    States = db.getCollection("states");
+    if (States === null) {
+        States = db.addCollection("states");
+    }
+};
+
+const db = new loki("loki.json", {
+    autoload: true,
+    autoloadCallback: databaseInitialize,
+    autosave: true,
+    autosaveInterval: 4000
+});
 
 const bot = new TeleBot({
     token: process.env.BOT_TOKEN,
@@ -17,6 +34,12 @@ bot.on("/start", msg => {
     // return bot.sendMessage(id, "What is your name?", { ask: "name" });
 });
 
+const getData = msg => {
+    const offset = msg.entities[0].length;
+    const data = msg.text.slice(offset + 1);
+    return data;
+};
+
 const initialState = {
     userList: {},
     name: "",
@@ -24,25 +47,61 @@ const initialState = {
     votes: []
 };
 
-let state = _.cloneDeep(initialState);
+const getStateForChat = chatID => {
+    console.log("getStateForChat()");
 
-const getData = msg => {
-    const offset = msg.entities[0].length;
-    const data = msg.text.slice(offset + 1);
-    return data;
+    let currentState = States.findOne({
+        chatID
+    });
+
+    if (!currentState) {
+        console.log("there is no state!!!!");
+        currentState = Object.assign({}, _.cloneDeep(initialState), {
+            chatID
+        });
+    }
+
+    console.log("getStateForChat()", currentState);
+
+    return currentState;
 };
 
-bot.on("/new", msg => {
-    state = _.cloneDeep(initialState);
+// =============================================
+// === cleaned start
+// =============================================
 
+bot.on("/new", msg => {
+    // console.log(msg);
+    // console.log(msg.chat.id);
+
+    let state = getStateForChat(msg.chat.id);
     let name = getData(msg);
 
     if (name && name.length > 0) {
-        state.name = name;
+        if (!state.meta) {
+            States.insert(
+                Object.assign({}, state, {
+                    name
+                })
+            );
+        } else {
+            States.update(
+                Object.assign({}, _.cloneDeep(initialState), {
+                    name
+                })
+            );
+        }
+
         msg.reply.text("Got it. Okay guys start voting!");
     } else {
         msg.reply.text("Starting a new poll!").then(res => {
             state.userList[msg.from.id] = "title";
+
+            if (!state.meta) {
+                States.insert(state);
+            } else {
+                States.update(state);
+            }
 
             return bot.sendMessage(msg.chat.id, "What is the poll about?", {
                 ask: "title",
@@ -56,8 +115,24 @@ bot.on("/new", msg => {
     }
 });
 
+bot.on("*", (msg, props) => {
+    let state = getStateForChat(msg.chat.id);
+
+    const userID = msg.from.id;
+    const ask = state.userList[userID];
+
+    if (ask) {
+        bot.event("ask." + ask, msg, props);
+        state.userList[userID] = false;
+        States.update(state);
+    }
+});
+
 bot.on("/titlechange", msg => {
+    let state = getStateForChat(msg.chat.id);
+
     state.userList[msg.from.id] = "titlechange";
+    States.update(state);
 
     return bot.sendMessage(msg.chat.id, "What is the title of the poll?", {
         ask: "titlechange",
@@ -69,31 +144,36 @@ bot.on("/titlechange", msg => {
     });
 });
 
-bot.on("*", (msg, props) => {
-    const userID = msg.from.id;
-    const ask = state.userList[userID];
-
-    if (ask) {
-        bot.event("ask." + ask, msg, props);
-        state.userList[userID] = false;
-    }
-});
-
 // Ask name event
 bot.on("ask.title", msg => {
+    let state = getStateForChat(msg.chat.id);
+
     //TODO should include empty check
     state.name = msg.text;
-    msg.reply.text(`Got it. Okay guys start voting on:\n${msg.text}`);
+    States.update(state);
+
+    msg.reply.text(`Understood.\nOkay guys start voting on:\n${msg.text}`);
 });
 
-// Ask name event
 bot.on("ask.titlechange", msg => {
+    let state = getStateForChat(msg.chat.id);
+
     //TODO should include empty check
     state.name = msg.text;
+    States.update(state);
+
     msg.reply.text(`Okay! Title of the poll changed to:\n${msg.text}`);
 });
 
+// =============================================
+// === cleaned end
+// =============================================
+
+// Ask name event
+
 bot.on("/add", msg => {
+    let state = getStateForChat(msg.chat.id);
+
     let option = getData(msg).trim();
 
     if (option && option.length > 0) {
@@ -130,6 +210,7 @@ bot.on("/add", msg => {
                 });
             default: {
                 state.options.push(option);
+                States.update(state);
                 return msg.reply.text(option + " added as an option");
             }
         }
@@ -143,6 +224,8 @@ bot.on("/add", msg => {
 });
 
 bot.on("/vote", msg => {
+    let state = getStateForChat(msg.chat.id);
+
     let option = getData(msg);
     if (option && option.length > 0) {
         bot
@@ -158,11 +241,11 @@ bot.on("/vote", msg => {
 
                 // CASE INSENSITIVE CHECK -- START
                 // Create a regex based on 'option', to search case insensitively
-                let searchregex = new RegExp(option, 'i');
+                let searchregex = new RegExp(option, "i");
 
                 // Search each vote using the regex. matchedIndex is assigned -1 if no votes match case insensitive search
-                let matchedIndex = state.votes.findIndex((vote) => {
-                    return (vote.option.match(searchregex) !== null);
+                let matchedIndex = state.votes.findIndex(vote => {
+                    return vote.option.match(searchregex) !== null;
                 });
 
                 // For matched result, make the current vote option follow previously existing variant
@@ -185,6 +268,8 @@ bot.on("/vote", msg => {
                 } else {
                     state.votes.push(vote);
                 }
+
+                States.update(state);
             })
             .then(() => {
                 bot.event("/result", msg);
@@ -222,6 +307,8 @@ bot.on("/vote", msg => {
 });
 
 bot.on("/result", msg => {
+    let state = getStateForChat(msg.chat.id);
+
     let tmp = _.groupBy(state.votes, vote => vote.option);
     let tmp3 = "";
     _.forIn(tmp, (value, key) => {
