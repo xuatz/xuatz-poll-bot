@@ -241,7 +241,7 @@ bot.on("/vote", msg => {
 
                 // CASE INSENSITIVE CHECK -- START
                 // Create a regex based on 'option', to search case insensitively
-                let searchregex = new RegExp(option, "i");
+                let searchregex = new RegExp(`^${option}$`, "i");
 
                 // Search each vote using the regex. matchedIndex is assigned -1 if no votes match case insensitive search
                 let matchedIndex = state.votes.findIndex(vote => {
