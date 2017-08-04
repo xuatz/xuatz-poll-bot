@@ -15,7 +15,7 @@ const databaseInitialize = () => {
     }
 };
 
-const db = new loki("loki.json", {
+const db = new loki("../loki.json", {
     autoload: true,
     autoloadCallback: databaseInitialize,
     autosave: true,
