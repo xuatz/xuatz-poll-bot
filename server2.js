@@ -48,20 +48,15 @@ const initialState = {
 };
 
 const getStateForChat = chatID => {
-    console.log("getStateForChat()");
-
     let currentState = States.findOne({
         chatID
     });
 
     if (!currentState) {
-        console.log("there is no state!!!!");
         currentState = Object.assign({}, _.cloneDeep(initialState), {
             chatID
         });
     }
-
-    console.log("getStateForChat()", currentState);
 
     return currentState;
 };
@@ -86,7 +81,7 @@ bot.on("/new", msg => {
             );
         } else {
             States.update(
-                Object.assign({}, _.cloneDeep(initialState), {
+                Object.assign({}, state, _.cloneDeep(initialState), {
                     name
                 })
             );
@@ -95,14 +90,13 @@ bot.on("/new", msg => {
         msg.reply.text("Got it. Okay guys start voting!");
     } else {
         msg.reply.text("Starting a new poll!").then(res => {
-            state.userList[msg.from.id] = "title";
-
             if (!state.meta) {
                 States.insert(state);
             } else {
+                state = Object.assign({}, state, _.cloneDeep(initialState));
+                state.userList[msg.from.id] = "title";
                 States.update(state);
             }
-
             return bot.sendMessage(msg.chat.id, "What is the poll about?", {
                 ask: "title",
                 replyMarkup: {
