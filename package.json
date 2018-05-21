@@ -1,6 +1,6 @@
 {
     "name": "xuatz-poll-bot",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "main": "index.js",
     "license": "MIT",
     "dependencies": {
@@ -14,7 +14,7 @@
         "nodemon": "^1.11.0"
     },
     "scripts": {
-        "start": "node server2.js",
-        "dev": "nodemon server2.js"
+        "start": "node server.js",
+        "dev": "nodemon server.js"
     }
 }
