@@ -1,4 +1,4 @@
-FROM node:7.10-alpine
+FROM node:12.16.2
 
 RUN mkdir -p /code
 COPY . /code

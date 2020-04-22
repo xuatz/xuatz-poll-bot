@@ -1,0 +1,15 @@
+version: "2.4"
+
+volumes:
+    mongo-xbo:
+
+services:
+    server:
+        image: localhost:5000/xuatz-poll-bot:0.0.3
+        build:
+            context: .
+        command: yarn start # npm run start:dev
+        container_name: xuatz-poll-bot
+        restart: always
+        environment:
+            - BOT_TOKEN=
