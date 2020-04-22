@@ -1,8 +1,5 @@
 version: "2.4"
 
-volumes:
-    mongo-xbo:
-
 services:
     server:
         image: localhost:5000/xuatz-poll-bot:0.0.3
