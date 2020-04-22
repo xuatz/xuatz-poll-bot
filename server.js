@@ -9,11 +9,11 @@ const http = require("http");
 
 const bot = new TeleBot({
     token: process.env.BOT_TOKEN,
-    usePlugins: ["askUser"]
+    usePlugins: ["askUser"],
 });
 
 // On start command
-bot.on("/start", msg => {
+bot.on("/start", (msg) => {
     // const id = msg.from.id;
     // // Ask user name
     // return bot.sendMessage(id, "What is your name?", { ask: "name" });
@@ -31,7 +31,7 @@ const databaseInitialize = () => {
 const db = new loki("xpb.db");
 databaseInitialize();
 
-const getData = msg => {
+const getData = (msg) => {
     const offset = msg.entities[0].length;
     const data = msg.text.slice(offset + 1);
     return data;
@@ -41,17 +41,17 @@ const initialState = {
     userList: {},
     name: "",
     options: [],
-    votes: []
+    votes: [],
 };
 
-const getStateForChat = chatID => {
+const getStateForChat = (chatID) => {
     let currentState = States.findOne({
-        chatID
+        chatID,
     });
 
     if (!currentState) {
         currentState = Object.assign({}, _.cloneDeep(initialState), {
-            chatID
+            chatID,
         });
     }
 
@@ -62,7 +62,7 @@ const getStateForChat = chatID => {
 // === cleaned start
 // =============================================
 
-bot.on("/new", msg => {
+bot.on("/new", (msg) => {
     // console.log(msg);
     // console.log(msg.chat.id);
 
@@ -73,20 +73,20 @@ bot.on("/new", msg => {
         if (!state.meta) {
             States.insert(
                 Object.assign({}, state, {
-                    name
+                    name,
                 })
             );
         } else {
             States.update(
                 Object.assign({}, state, _.cloneDeep(initialState), {
-                    name
+                    name,
                 })
             );
         }
 
         msg.reply.text("Got it. Okay guys start voting!");
     } else {
-        msg.reply.text("Starting a new poll!").then(res => {
+        msg.reply.text("Starting a new poll!").then((res) => {
             if (!state.meta) {
                 States.insert(state);
             } else {
@@ -98,9 +98,9 @@ bot.on("/new", msg => {
                 ask: "title",
                 replyMarkup: {
                     force_reply: true,
-                    selective: true
+                    selective: true,
                 },
-                replyToMessage: msg.message_id
+                replyToMessage: msg.message_id,
             });
         });
     }
@@ -119,7 +119,7 @@ bot.on("*", (msg, props) => {
     }
 });
 
-bot.on("/titlechange", msg => {
+bot.on("/titlechange", (msg) => {
     let state = getStateForChat(msg.chat.id);
 
     state.userList[msg.from.id] = "titlechange";
@@ -129,14 +129,14 @@ bot.on("/titlechange", msg => {
         ask: "titlechange",
         replyMarkup: {
             force_reply: true,
-            selective: true
+            selective: true,
         },
-        replyToMessage: msg.message_id
+        replyToMessage: msg.message_id,
     });
 });
 
 // Ask name event
-bot.on("ask.title", msg => {
+bot.on("ask.title", (msg) => {
     let state = getStateForChat(msg.chat.id);
 
     //TODO should include empty check
@@ -146,7 +146,7 @@ bot.on("ask.title", msg => {
     msg.reply.text(`Understood.\nOkay guys start voting on:\n${msg.text}`);
 });
 
-bot.on("ask.titlechange", msg => {
+bot.on("ask.titlechange", (msg) => {
     let state = getStateForChat(msg.chat.id);
 
     //TODO should include empty check
@@ -162,7 +162,7 @@ bot.on("ask.titlechange", msg => {
 
 // Ask name event
 
-bot.on("/add", msg => {
+bot.on("/add", (msg) => {
     let state = getStateForChat(msg.chat.id);
 
     let option = getData(msg).trim();
@@ -172,7 +172,7 @@ bot.on("/add", msg => {
             "not literally!",
             "very funny",
             "roflcopter i am flying",
-            "Somebody's gonna get hurt, real bad"
+            "Somebody's gonna get hurt, real bad",
         ];
 
         const helperMsg = `\ntype \`/add <actual option>\` e.g. \`/add pikachu\``;
@@ -197,7 +197,7 @@ bot.on("/add", msg => {
             case "actual option":
                 return bot.sendMessage(msg.chat.id, "RKO OUTTA NOWHERE!!!", {
                     parseMode: "Markdown",
-                    replyToMessage: msg.message_id
+                    replyToMessage: msg.message_id,
                 });
             default: {
                 state.options.push(option);
@@ -214,20 +214,19 @@ bot.on("/add", msg => {
     }
 });
 
-bot.on("/vote", msg => {
+bot.on("/vote", (msg) => {
     let state = getStateForChat(msg.chat.id);
 
     let option = getData(msg);
     if (option && option.length > 0) {
-        bot
-            .sendMessage(msg.chat.id, "Your vote is captured", {
-                replyMarkup: {
-                    remove_keyboard: true,
-                    selective: true
-                },
-                replyToMessage: msg.message_id
-            })
-            .then(res => {
+        bot.sendMessage(msg.chat.id, "Your vote is captured", {
+            replyMarkup: {
+                remove_keyboard: true,
+                selective: true,
+            },
+            replyToMessage: msg.message_id,
+        })
+            .then((res) => {
                 bot.deleteMessage(res.result.chat.id, res.result.message_id);
 
                 // CASE INSENSITIVE CHECK -- START
@@ -235,7 +234,7 @@ bot.on("/vote", msg => {
                 let searchregex = new RegExp(`^${option}$`, "i");
 
                 // Search each vote using the regex. matchedIndex is assigned -1 if no votes match case insensitive search
-                let matchedIndex = state.votes.findIndex(vote => {
+                let matchedIndex = state.votes.findIndex((vote) => {
                     return vote.option.match(searchregex) !== null;
                 });
 
@@ -247,9 +246,9 @@ bot.on("/vote", msg => {
 
                 let vote = {
                     user: msg.from,
-                    option
+                    option,
                 };
-                let index = state.votes.findIndex(vote => {
+                let index = state.votes.findIndex((vote) => {
                     if (vote.user) {
                         return vote.user.id == msg.from.id;
                     }
@@ -260,12 +259,23 @@ bot.on("/vote", msg => {
                     state.votes.push(vote);
                 }
 
+                // AD-HOC OPTIONS ADDED TO VOTE OPTIONS --  START
+                let matchedOptionIndex = state.options.findIndex((opt) => {
+                    return opt.match(searchregex) !== null;
+                });
+
+                if (matchedOptionIndex === -1) {
+                    // Naively adds ad-hoc options into the vote options after making 1 check to ensure entry was not previously used
+                    state.options.push(option);
+                }
+                // AD-HOC OPTIONS ADDED TO VOTE OPTIONS --  END
+
                 States.update(state);
             })
             .then(() => {
                 bot.event("/result", msg);
             })
-            .catch(err => {
+            .catch((err) => {
                 console.log(err);
             });
     } else {
@@ -277,7 +287,7 @@ bot.on("/vote", msg => {
             );
         } else {
             let replyMarkup = bot.keyboard(
-                state.options.map(option => {
+                state.options.map((option) => {
                     return [bot.button("/vote " + option)];
                 })
             );
@@ -289,18 +299,18 @@ bot.on("/vote", msg => {
             return bot.sendMessage(msg.chat.id, "Please cast your vote", {
                 replyMarkup: Object.assign({}, replyMarkup, {
                     resize_keyboard: true,
-                    selective: true
+                    selective: true,
                 }),
-                replyToMessage: msg.message_id
+                replyToMessage: msg.message_id,
             });
         }
     }
 });
 
-bot.on("/result", msg => {
+bot.on("/result", (msg) => {
     let state = getStateForChat(msg.chat.id);
 
-    let tmp = _.groupBy(state.votes, vote => vote.option);
+    let tmp = _.groupBy(state.votes, (vote) => vote.option);
     let tmp3 = "";
     _.forIn(tmp, (value, key) => {
         tmp3 += `${key} (${value.length} votes) \n`;
@@ -311,7 +321,7 @@ bot.on("/result", msg => {
 
         // }
 
-        value.forEach(vote => {
+        value.forEach((vote) => {
             tmp3 += "- " + (vote.user.first_name || vote.user.username) + "\n";
         });
     });
