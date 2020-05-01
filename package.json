@@ -1,20 +1,24 @@
 {
-    "name": "xuatz-poll-bot",
-    "version": "0.0.3",
-    "main": "index.js",
-    "license": "MIT",
-    "dependencies": {
-        "dotenv": "^4.0.0",
-        "lodash": "^4.17.4",
-        "lokijs": "^1.5.0",
-        "telebot": "^1.2.2",
-        "telegraf": "^3.8.2"
-    },
-    "devDependencies": {
-        "nodemon": "^1.11.0"
-    },
-    "scripts": {
-        "start": "node server.js",
-        "dev": "nodemon server.js"
-    }
+  "name": "xuatz-poll-bot",
+  "version": "0.0.3",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^4.0.0",
+    "lodash": "^4.17.4",
+    "lokijs": "^1.5.0",
+    "telebot": "^1.2.2",
+    "telegraf": "^3.8.2",
+    "snyk": "^1.316.1"
+  },
+  "devDependencies": {
+    "nodemon": "^1.11.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "snyk-protect": "snyk protect",
+    "prepare": "yarn run snyk-protect"
+  },
+  "snyk": true
 }
