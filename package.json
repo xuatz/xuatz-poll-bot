@@ -8,7 +8,7 @@
         "lodash": "^4.17.4",
         "lokijs": "^1.5.0",
         "telebot": "^1.2.2",
-        "telegraf": "^3.8.2"
+        "telegraf": "^3.10.0"
     },
     "devDependencies": {
         "nodemon": "^1.11.0"
